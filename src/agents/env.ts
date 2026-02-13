@@ -6,6 +6,7 @@ export const env = createEnv({
 		GEMINI_API_KEY: z.string().nonempty(),
 		LIVEKIT_API_KEY: z.string().nonempty(),
 		LIVEKIT_API_SECRET: z.string().nonempty(),
+		GEMINI_MODEL: z.string().nonempty(),
 	},
 
 	clientPrefix: "VITE_",

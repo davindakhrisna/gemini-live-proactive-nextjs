@@ -1,6 +1,8 @@
-import { Track, type Room } from "livekit-client";
+import { Track, type Room, type LocalTrackPublication } from "livekit-client";
 
-export async function startScreenShare(room: Room) {
+export async function startScreenShare(
+	room: Room,
+): Promise<LocalTrackPublication> {
 	const stream = await navigator.mediaDevices.getDisplayMedia({
 		video: true,
 		audio: false,
@@ -8,9 +10,21 @@ export async function startScreenShare(room: Room) {
 
 	const screenTrack = stream.getVideoTracks()[0];
 
-	await room.localParticipant.publishTrack(screenTrack, {
+	const publication = await room.localParticipant.publishTrack(screenTrack, {
 		source: Track.Source.ScreenShare,
+		simulcast: false,
 	});
 
-	return stream;
+	console.log("[client] screenshare published", publication.trackSid);
+
+	console.log(
+		"[client] local tracks",
+		Array.from(room.localParticipant.trackPublications.values()).map((p) => ({
+			sid: p.trackSid,
+			source: p.source,
+			kind: p.kind,
+		})),
+	);
+
+	return publication;
 }

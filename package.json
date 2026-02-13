@@ -9,9 +9,11 @@
     "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
-    "check": "biome check"
+    "check": "biome check",
+    "agent-10": "node --env-file=.env.local --import tsx src/agents/screenShare/index.ts 10"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@livekit/rtc-node": "^0.13.24",
     "@orpc/client": "^1.13.0",
     "@orpc/json-schema": "^1.13.0",
