@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import { liveKitStore, liveKitActions } from "@/stores/livekit-store";
-import { connectLiveKit } from "@/hooks/livekit/connectLivekit";
+import { connectLivekitClient, connectLivekitAgent } from "@/hooks/livekit/connectLivekit";
 import { startScreenShare } from "@/hooks/livekit/startScreen";
 
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,15 @@ export const Route = createFileRoute("/session/$id")({
 function SessionPage() {
 	const { id } = Route.useParams();
 
-	// Subscribe to store state
 	const state = useStore(liveKitStore);
 
 	async function handleConnect() {
 		try {
 			liveKitActions.connect(id);
 
-			const connectedRoom = await connectLiveKit(id);
+			const connectedRoom = await connectLivekitClient(id);
+
+			const agentResult = await connectLivekitAgent(id);
 
 			connectedRoom.on("dataReceived", (payload) => {
 				const msg = new TextDecoder().decode(payload);

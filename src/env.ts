@@ -14,6 +14,9 @@ export const env = createEnv({
 		VITE_LIVEKIT_URL: z.string().url().nonempty(),
 	},
 
-	runtimeEnv: import.meta.env,
+	runtimeEnv: {
+		...process.env,
+		...import.meta.env,
+	},
 	emptyStringAsUndefined: true,
 });

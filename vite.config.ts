@@ -15,6 +15,12 @@ const config = defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    exclude: ['@livekit/rtc-node'],
+  },
+  ssr: {
+    external: ['@livekit/rtc-node'],
+  },
   plugins: [
     devtools(),
     nitro(),
