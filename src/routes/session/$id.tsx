@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import type { Room } from "livekit-client";
+import { useEffect } from "react";
+import { useStore } from "@tanstack/react-store";
+import { liveKitStore, liveKitActions } from "@/stores/livekit-store";
 import { connectLiveKit } from "@/hooks/livekit/connectLivekit";
 import { startScreenShare } from "@/hooks/livekit/startScreen";
 
@@ -10,64 +11,59 @@ import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/session/$id")({
 	component: SessionPage,
+	parseParams: (params) => ({ id: params.id }),
+	stringifyParams: (params) => ({ id: params.id }),
 });
 
 function SessionPage() {
 	const { id } = Route.useParams();
 
-	const [room, setRoom] = useState<Room | null>(null);
-	const [status, setStatus] = useState<
-		"idle" | "connecting" | "connected" | "error"
-	>("idle");
-
-	const [sharing, setSharing] = useState(false);
-	const [aiLog, setAiLog] = useState<string[]>([]);
+	// Subscribe to store state
+	const state = useStore(liveKitStore);
 
 	async function handleConnect() {
 		try {
-			setStatus("connecting");
+			liveKitActions.connect(id);
 
 			const connectedRoom = await connectLiveKit(id);
 
 			connectedRoom.on("dataReceived", (payload) => {
 				const msg = new TextDecoder().decode(payload);
-				setAiLog((prev) => [msg, ...prev]);
+				liveKitActions.addAiLog(msg);
 			});
 
-			setRoom(connectedRoom);
-			setStatus("connected");
+			liveKitActions.setRoom(connectedRoom);
+			liveKitActions.setStatus("connected");
 		} catch (err) {
 			console.error(err);
-			setStatus("error");
+			liveKitActions.setStatus("error");
 		}
 	}
 
 	async function handleShareScreen() {
-		if (!room) return;
+		if (!state.room) return;
 
 		try {
-			await startScreenShare(room);
-			setSharing(true);
+			await startScreenShare(state.room);
+			liveKitActions.setSharing(true);
 		} catch (err) {
 			console.error(err);
-			setSharing(false);
+			liveKitActions.setSharing(false);
 		}
 	}
 
 	async function handleDisconnect() {
-		if (!room) return;
+		if (!state.room) return;
 
-		room.disconnect();
-		setRoom(null);
-		setSharing(false);
-		setStatus("idle");
+		state.room.disconnect();
+		liveKitActions.reset();
 	}
 
 	useEffect(() => {
 		return () => {
-			room?.disconnect();
+			state.room?.disconnect();
 		};
-	}, [room]);
+	}, [state.room]);
 
 	return (
 		<div className="min-h-screen p-6 flex items-start justify-center bg-background">
@@ -81,15 +77,15 @@ function SessionPage() {
 
 					<CardContent className="space-y-4">
 						<div className="flex items-center gap-2">
-							<Badge variant="outline">Status: {status.toUpperCase()}</Badge>
+							<Badge variant="outline">Status: {state.status.toUpperCase()}</Badge>
 
-							{sharing && <Badge>SCREEN SHARING</Badge>}
+							{state.sharing && <Badge>SCREEN SHARING</Badge>}
 						</div>
 
 						<div className="flex gap-3 flex-wrap">
 							<Button
 								onClick={handleConnect}
-								disabled={status === "connecting" || status === "connected"}
+								disabled={state.status === "connecting" || state.status === "connected"}
 							>
 								Connect
 							</Button>
@@ -97,7 +93,7 @@ function SessionPage() {
 							<Button
 								variant="secondary"
 								onClick={handleShareScreen}
-								disabled={!room || sharing}
+								disabled={!state.room || state.sharing}
 							>
 								Share Screen
 							</Button>
@@ -105,7 +101,7 @@ function SessionPage() {
 							<Button
 								variant="destructive"
 								onClick={handleDisconnect}
-								disabled={!room}
+								disabled={!state.room}
 							>
 								Disconnect
 							</Button>
@@ -119,14 +115,14 @@ function SessionPage() {
 					</CardHeader>
 
 					<CardContent className="space-y-2">
-						{aiLog.length === 0 ? (
+						{state.aiLog.length === 0 ? (
 							<p className="text-muted-foreground text-sm">
 								No messages yet. Start screen share and wait for the bot to
 								judge you.
 							</p>
 						) : (
 							<div className="space-y-2">
-								{aiLog.slice(0, 10).map((msg, idx) => (
+								{state.aiLog.slice(0, 10).map((msg, idx) => (
 									<div
 										key={idx}
 										className="p-3 border rounded-xl text-sm bg-muted/40"

@@ -10,7 +10,7 @@ import { connectGeminiSession } from "./gemini";
 import { agentJoinRoom } from "./livekit";
 import { env } from "./env";
 
-async function main() {
+export default async function main() {
 	const url = env.VITE_LIVEKIT_URL;
 	const token = await agentJoinRoom("10");
 
@@ -39,16 +39,11 @@ async function main() {
 		await sendFeedback(text);
 	});
 
-	let screenTrackSeen = false;
-
 	room.on(RoomEvent.TrackSubscribed, async (track, pub) => {
 		console.log("[agent] subscribed:", pub.source, pub.kind);
 
 		if (pub.kind !== TrackKind.KIND_VIDEO) return;
 		if (pub.source !== TrackSource.SOURCE_SCREENSHARE) return;
-
-		if (screenTrackSeen) return;
-		screenTrackSeen = true;
 
 		console.log("[agent] GOT SCREEN TRACK - Starting VideoStream");
 
@@ -58,7 +53,6 @@ async function main() {
 			try {
 				for await (const frameEvent of videoStream) {
 					const { frame } = frameEvent;
-					// frame.data is the raw YUV/RGBA buffer
 					console.log("[agent] frame rx:", frame.width, "x", frame.height);
 				}
 			} catch (err) {
@@ -69,8 +63,3 @@ async function main() {
 		await sendFeedback("✅ Bot is watching your screen.");
 	});
 }
-
-main().catch((err) => {
-	console.error("Fatal Error:", err);
-	process.exit(1);
-});
